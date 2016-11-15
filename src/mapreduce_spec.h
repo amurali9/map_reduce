@@ -16,8 +16,8 @@ struct MapReduceSpec {
      string output_dir;     	
      string user_id;	     
 
-     vector<string> worker_ipaddr_ports; 	
-     vector<string> input_files;
+     vector<string> worker_ipaddr_ports;
+     vector<string> input_files;	 	
 };
 
 
@@ -47,7 +47,15 @@ while( getline(is_file, line) )
 	if(key.compare("user_id") == 0) mr_spec.user_id = value;
 
 	if(key.compare("worker_ipaddr_ports") == 0) mr_spec.worker_ipaddr_ports.push_back(value);
-	if(key.compare("input_files") == 0) mr_spec.input_files.push_back(value);	
+	if(key.compare("input_files") == 0){
+	      stringstream ss(value);
+  	      string tok;
+
+	   while(getline(ss, tok, ',')) {
+    		mr_spec.input_files.push_back(tok);
+  	    }		
+	}	
+
 
      } 
   }
