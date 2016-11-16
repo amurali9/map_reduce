@@ -9,7 +9,7 @@
 
 int main(int argc, char **argv) {
 
-	char* cwd;
+    char* cwd;
     char buff[PATH_MAX + 1];
     cwd = getcwd( buff, PATH_MAX + 1 );
 

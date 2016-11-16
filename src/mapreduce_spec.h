@@ -41,7 +41,7 @@ while( getline(is_file, line) )
 
 	if(key.compare("n_output_files") == 0) mr_spec.n_output_files = stoi(value);
 	if(key.compare("n_workers") == 0) mr_spec.n_workers = stoi(value);
-	if(key.compare("map_kilobytes") == 0) mr_spec.map_kilobytes = stoi(value);
+	if(key.compare("map_kilobytes") == 0) mr_spec.map_kilobytes = (stoi(value)*1024);
 
 	if(key.compare("output_dir") == 0) mr_spec.output_dir = value;
 	if(key.compare("user_id") == 0) mr_spec.user_id = value;
