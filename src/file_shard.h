@@ -13,7 +13,7 @@ using namespace std;
 /* CS6210_TASK: Create your own data structure here, where you can hold information about file splits,
      that your master would use for its own bookkeeping and to convey the tasks to the workers for mapping */
 struct FileShard {				// Information about every file split
-     multiset<string, vector<int>> f_info;		 
+   tuple<char,char,int, int> f_info;  		 
 };
 
 /* CS6210_TASK: Create fileshards from the list of input files, map_kilobytes etc. using mr_spec you populated  */ 
@@ -21,14 +21,15 @@ inline bool shard_files(const MapReduceSpec& mr_spec, std::vector<FileShard>& fi
       
  	// Collect information about the input files
 	int n_ip_files = mr_spec.input_files.size();
-        int maxSize = mr_spec.map_kilobytes; 
-        int result = 0;
+        int maxSize    = mr_spec.map_kilobytes; 
+        int result     = 0;
         FILE *fIn;
         FILE *fOut;   
         char buffer[200];
-        
+	int indx;	
         size_t size;
         char ch;
+        const char* bname = "input/tmp_shard";
 
     // File sharding	
     /********************************************************************************************************************/
@@ -41,17 +42,18 @@ const char *fileIn = mr_spec.input_files[m].c_str();
         fIn = fopen(fileIn, "r");
         if (fIn != NULL)
         {
-            fOut = NULL;
-            result = 1;   /* we have at least one part */
+            if(m == 0){ 
+		fOut = NULL;
+            	result = 1;
+	     }   /* we have at least one part. First run */
 
             while (!feof(fIn))
-            {
-		
+            {		
                 /* initialize (next) output file if no output file opened */
                 if (fOut == NULL)
-                {
-                    sprintf(buffer, "%s.%03d", fileIn, result);
-                    fOut = fopen(buffer, "w");
+                {                    
+		    sprintf(buffer, "%s_%02d.txt", bname, result);
+                    fOut = fopen(buffer, "wa");
                     if (fOut == NULL)
                     {
                         result *= -1;
@@ -62,11 +64,9 @@ const char *fileIn = mr_spec.input_files[m].c_str();
 
                 /* calculate size of data to be read from input file in order to not exceed maxSize */
 		ch = fgetc(fIn);
-		if(ch == EOF){
+		if(ch == EOF){ 		// This is where the file ends and the write for new file starts. Do bookkeeping
 		   break;	
-		}else{
-		if(size > maxSize && ch == '\n' && m != n_ip_files){
-		   cout << size << "--" << endl;
+		}else if(size > maxSize && ch == '\n'){
 		   size = 0;
 		   fclose(fOut);
                    fOut = NULL;
@@ -75,20 +75,19 @@ const char *fileIn = mr_spec.input_files[m].c_str();
 		   fputc(ch,fOut);
 		   size += 1;
 		}
-	     }
 
-		
-            }
-
-            /* clean up */
-            if (fOut != NULL)
-            {
-                fclose(fOut);
-            }
+            } // End of while loop
             fclose(fIn);
         }
     }
 }    
+
+
+/* clean up */
+if (fOut != NULL)
+{
+   fclose(fOut);
+}
 
 /********************************************************************************************************************/
 
