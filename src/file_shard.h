@@ -13,7 +13,7 @@ using namespace std;
 /* CS6210_TASK: Create your own data structure here, where you can hold information about file splits,
      that your master would use for its own bookkeeping and to convey the tasks to the workers for mapping */
 struct FileShard {			
-   char* sh_name;   		 
+   string sh_name;   		 
 };
 
 /* CS6210_TASK: Create fileshards from the list of input files, map_kilobytes etc. using mr_spec you populated  */ 
@@ -25,19 +25,16 @@ inline bool shard_files(const MapReduceSpec& mr_spec, std::vector<FileShard>& fi
         int result     = 0;
         FILE *fIn;
         FILE *fOut;   
-        char buffer[200];
-	int indx;	
-        size_t size;
+        string buffer;
+	size_t size;
         char ch;
-        const char* bname = "input/tmp_shard";
-  	FileShard shard_info;	 
+        const char* bname = "input/tmp_shard_";	 
 
     // File sharding	
     /********************************************************************************************************************/
         
 for(int m =0 ; m<n_ip_files; ++m){
 const char *fileIn = mr_spec.input_files[m].c_str();
-
 
     if ((fileIn != NULL) && (maxSize > 0))
     {
@@ -54,11 +51,9 @@ const char *fileIn = mr_spec.input_files[m].c_str();
                 /* initialize (next) output file if no output file opened */
                 if (fOut == NULL)
                 {   
-                    sprintf(buffer, "%s_%02d.txt", bname, result);
-		    
-		    shard_info.sh_name = buffer;  // Save the filename as its generated
-
-		    fOut = fopen(buffer, "wa");
+		    buffer = bname + to_string(result) + ".txt";		// Dynamically generate the filenames
+		    fileShards.push_back({buffer});
+		    fOut = fopen(buffer.c_str(), "wa");
                     if (fOut == NULL)
                     {
                         result *= -1;
@@ -74,8 +69,7 @@ const char *fileIn = mr_spec.input_files[m].c_str();
 		}else if(size > maxSize && ch == '\n'){
 		   size = 0;
 		   fclose(fOut);
-		   fileShards.push_back(shard_info);	
-                   fOut = NULL;
+		   fOut = NULL;
                    result++;		
 		}else{
 		   fputc(ch,fOut);

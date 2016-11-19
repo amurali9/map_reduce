@@ -38,7 +38,7 @@ extern std::shared_ptr<BaseReducer> get_reducer_from_task_factory(const std::str
 bool Worker::run() {
 	/*  Below 4 lines are just examples of how you will call map and reduce 
 		Remove them once you start writing your own logic */ 
-	std::cout << "worker.run(), I 'm not ready yet" <<std::endl;
+
 	auto mapper = get_mapper_from_task_factory("cs6210");
 	mapper->map("some_input_map");
 	auto reducer = get_reducer_from_task_factory("cs6210");
