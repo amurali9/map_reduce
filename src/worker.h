@@ -42,10 +42,10 @@ class WorkerService final : public MasterWorker::Service {
     Status DoMap(ServerContext* context, const FileChunk* request,
                     MapStatus* reply) override {
 			std::cout<<"Doing map"<<std::endl;
-			string fileChunkName = request->name();
+			std::string fileChunkName = request->name();
 			std::cout<<"Trying to open filechunk"<<std::endl;
 			FILE *fileChunk;
-			fileChunk = fopen(fileChunkName, 'r');
+			fileChunk = fopen(fileChunkName.c_str(), "r");
 			if(!fileChunk){
 				std::cout<<"Opened filechunk"<<std::endl;
 			}
