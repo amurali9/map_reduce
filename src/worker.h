@@ -69,10 +69,10 @@ bool Worker::run() {
 
 		//grpc server
 
-		std::cout<<"Attempting to run WorkerServer"<<std::endl;
-		ServerBuilder builder;
-		WorkerService service(this->ip_addr_port);
-		builder.AddListeningPort(this->ip_addr_port, grpc::InsecureServerCredentials());
+	std::cout<<"Attempting to run WorkerServer"<<std::endl;
+	ServerBuilder builder;
+	WorkerService service(this->ip_addr_port);
+	builder.AddListeningPort(this->ip_addr_port, grpc::InsecureServerCredentials());
   	builder.RegisterService(&service);
 
    	std::unique_ptr<Server> server(builder.BuildAndStart());

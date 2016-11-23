@@ -6,8 +6,9 @@
 #include <cmath>
 #include <map>
 #include <set>
+#include <unistd.h>
 #include <fstream>
-
+#define PATH_MAX 200
 using namespace std;
 
 /* CS6210_TASK: Create your own data structure here, where you can hold information about file splits,
@@ -28,7 +29,11 @@ inline bool shard_files(const MapReduceSpec& mr_spec, std::vector<FileShard>& fi
         string buffer;
 	size_t size;
         char ch;
-        const char* bname = "input/tmp_shard_";	 
+	char* cwd;
+        char buff[PATH_MAX + 1];
+        cwd = getcwd( buff, PATH_MAX + 1 );
+        
+	string bname = string(cwd) + "/input/tmp_shard_";	 
 
     // File sharding	
     /********************************************************************************************************************/
