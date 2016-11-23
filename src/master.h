@@ -2,8 +2,6 @@
 
 #include "mapreduce_spec.h"
 #include "file_shard.h"
-
-<<<<<<< HEAD
 #include <grpc++/grpc++.h>
 using namespace std;
 #include "masterworker.grpc.pb.h"
