@@ -41,9 +41,6 @@ class Master {
 	You can populate your other class data members here if you want */
 Master::Master(const MapReduceSpec& mr_spec, const std::vector<FileShard>& file_shards) {
 
-    for(int j=0;j<file_shards.size();++j){
-	cout << "Filename " << file_shards[j].sh_name << endl;
-    }
 }
 
 class MasterClient {
