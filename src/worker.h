@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fstream>
 #include <mr_task_factory.h>
 #include "mr_tasks.h"
 
@@ -41,6 +42,17 @@ class WorkerService final : public MasterWorker::Service {
     Status DoMap(ServerContext* context, const FileChunk* request,
                     MapStatus* reply) override {
 			std::cout<<"Doing map"<<std::endl;
+			string fileChunkName = request->name();
+			std::cout<<"Trying to open filechunk"<<std::endl;
+			FILE *fileChunk;
+			fileChunk = fopen(fileChunkName, 'r');
+			if(!fileChunk){
+				std::cout<<"Opened filechunk"<<std::endl;
+			}
+			else{
+				std::cout<<"File not found"<<std::endl;
+			}
+			fclose(fileChunk);
 			reply->set_map_status(true);
       reply->set_worker_id(id_);
       return Status::OK;
