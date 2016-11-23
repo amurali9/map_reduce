@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package masterworker;
+
+// The store service definition.
+service MasterWorker {
+  // Puts worker to work with either a map task or a reduce task
+        rpc DoMap (FileChunk) returns (MapStatus) {}
+        rpc DoReduce (FileChunk) returns (ReduceStatus) {}
+}
+
+// The request message containing the file_shard_name
+message FileChunk {
+        string name = 1;
+}
+
+// The response message containing the status of map task
+message MapStatus {
+        bool map_status = 1;
+        string worker_id = 2;
+
+}
+
+// The response message containing the status of map task
+message ReduceStatus {
+        bool reduce_status = 1;
+        string worker_id = 2;
+}
