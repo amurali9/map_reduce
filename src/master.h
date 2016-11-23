@@ -33,6 +33,7 @@ class Master {
 
 	private:
 		/* NOW you can add below, data members and member functions as per the need of your implementation*/
+		vector<string> shard_names;
 
 };
 
@@ -40,6 +41,10 @@ class Master {
 /* CS6210_TASK: This is all the information your master will get from the framework.
 	You can populate your other class data members here if you want */
 Master::Master(const MapReduceSpec& mr_spec, const std::vector<FileShard>& file_shards) {
+ 
+   for(FileShard fs : file_shards){
+	shard_names.push_back(fs.sh_name);
+   }		
 
 }
 
@@ -48,10 +53,10 @@ class MasterClient {
   explicit MasterClient(std::shared_ptr<Channel> channel)
       : stub_(MasterWorker::NewStub(channel)) {}
 
-  bool DoMap() {
+  bool DoMap(string filename) {
     // Data we are sending to the server.
     FileChunk request;
-    request.set_name("dummy_file_shard");
+    request.set_name(filename);
     MapStatus reply;
     ClientContext context;
     CompletionQueue cq;
@@ -83,7 +88,7 @@ bool Master::run() {
 	//make rpc call to run the worker
 	MasterClient masterClient(grpc::CreateChannel("localhost:50051", grpc::InsecureChannelCredentials()));
 	cout<<"Requesting worker to domap"<<endl;
-	bool reply = masterClient.DoMap();
+	bool reply = masterClient.DoMap(shard_names[0]);
 	cout<<reply;
 	return true;
 }
