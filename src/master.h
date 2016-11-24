@@ -34,7 +34,7 @@ class Master {
 	private:
 		/* NOW you can add below, data members and member functions as per the need of your implementation*/
 		vector<string> shard_names;
-
+		vector<string> worker_info;
 };
 
 
@@ -42,8 +42,14 @@ class Master {
 	You can populate your other class data members here if you want */
 Master::Master(const MapReduceSpec& mr_spec, const std::vector<FileShard>& file_shards) {
  
+   // Get the fileshard names
    for(FileShard fs : file_shards){
 	shard_names.push_back(fs.sh_name);
+   }
+
+   //Get worker specs from mr_spec
+   for(string ws : mr_spec.worker_ipaddr_ports ){
+	worker_info.push_back(ws);
    }		
 
 }
@@ -54,6 +60,7 @@ class MasterClient {
       : stub_(MasterWorker::NewStub(channel)) {}
 
   bool DoMap(string filename) {
+
     // Data we are sending to the server.
     FileChunk request;
     request.set_name(filename);
@@ -62,8 +69,7 @@ class MasterClient {
     CompletionQueue cq;
     Status status;
 
-    std::unique_ptr<ClientAsyncResponseReader<MapStatus> > rpc(
-        stub_->AsyncDoMap(&context, request, &cq));
+    std::unique_ptr<ClientAsyncResponseReader<MapStatus> > rpc(stub_->AsyncDoMap(&context, request, &cq));
 
     rpc->Finish(&reply, &status, (void*)1);
     void* got_tag;
@@ -74,9 +80,9 @@ class MasterClient {
     if (status.ok()) {
       cout<<"RPC Done"<<endl;
     } else {
-			cout<<"RPC failed"<<endl;
+      cout<<"RPC failed"<<endl;
     }
-		return status.ok();
+      return status.ok();
   }
  private:
   std::unique_ptr<MasterWorker::Stub> stub_;
@@ -85,10 +91,11 @@ class MasterClient {
 
 /* CS6210_TASK: Here you go. once this function is called you will complete whole map reduce task and return true if succeeded */
 bool Master::run() {
+
 	//make rpc call to run the worker
 	MasterClient masterClient(grpc::CreateChannel("localhost:50051", grpc::InsecureChannelCredentials()));
 	cout<<"Requesting worker to domap"<<endl;
 	bool reply = masterClient.DoMap(shard_names[0]);
-	cout<<reply;
+	
 	return true;
 }

@@ -39,8 +39,7 @@ class WorkerService final : public MasterWorker::Service {
     WorkerService(const std::string& server_address) : id_("Worker_" + server_address) {}
 
   private:
-    Status DoMap(ServerContext* context, const FileChunk* request,
-                    MapStatus* reply) override {
+    Status DoMap(ServerContext* context, const FileChunk* request, MapStatus* reply) override {
 			std::cout<<"Doing map"<<std::endl;
 			std::string fileChunkName = request->name();
 			std::cout<<"Trying to open filechunk with name "<<fileChunkName<<std::endl;
@@ -79,8 +78,7 @@ bool Worker::run() {
 	/*  Below 4 lines are just examples of how you will call map and reduce
 		Remove them once you start writing your own logic */
 
-		//grpc server
-
+	//grpc server
 	std::cout<<"Attempting to run WorkerServer"<<std::endl;
 	ServerBuilder builder;
 	WorkerService service(this->ip_addr_port);
@@ -93,12 +91,11 @@ bool Worker::run() {
   	server->Wait();
 
 
-	std::cout << "worker.run(), I 'm not ready yet" <<std::endl;
-	/*  Below 4 lines are just examples of how you will call map and reduce
-		Remove them once you start writing your own logic */
-	auto mapper = get_mapper_from_task_factory("cs6210");
-	mapper->map("some_input_map");
-	auto reducer = get_reducer_from_task_factory("cs6210");
-	reducer->reduce("some_input_key_reduce", std::vector<std::string>({"some_input_vals_reduce"}));
+	//std::cout << "worker.run(), I 'm not ready yet" <<std::endl;
+	//auto mapper = get_mapper_from_task_factory("cs6210");
+	//mapper->map("some_input_map");
+	//auto reducer = get_reducer_from_task_factory("cs6210");
+	//reducer->reduce("some_input_key_reduce", std::vector<std::string>({"some_input_vals_reduce"}));
+
 	return true;
 }
