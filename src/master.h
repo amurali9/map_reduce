@@ -36,23 +36,18 @@ class Master {
 	private:
 		/* NOW you can add below, data members and member functions as per the need of your implementation*/
 		vector<string> shard_names;
-<<<<<<< HEAD
 		MapReduceSpec spec;
-=======
 		map<string,bool> worker_info;	// Save the worker name and status (0: busy and 1: idle)
->>>>>>> 041136f5e208634ed98093be9a61341b72d19e65
 };
 
 
 /* CS6210_TASK: This is all the information your master will get from the framework.
 	You can populate your other class data members here if you want */
 Master::Master(const MapReduceSpec& mr_spec, const std::vector<FileShard>& file_shards) {
-<<<<<<< HEAD
 	spec = mr_spec;
 	for(FileShard fs : file_shards){
 		shard_names.push_back(fs.sh_name);
   }
-=======
 
    // Get the fileshard names
    for(FileShard fs : file_shards){
@@ -63,7 +58,6 @@ Master::Master(const MapReduceSpec& mr_spec, const std::vector<FileShard>& file_
   	worker_info[mr_spec.worker_ipaddr_ports[j]] = 0;	// Initialize the states of all workers as idle (0:idle 1:busy)
    }
 
->>>>>>> 041136f5e208634ed98093be9a61341b72d19e65
 }
 
 class MasterClient {
@@ -84,9 +78,6 @@ class MasterClient {
     std::unique_ptr<ClientAsyncResponseReader<MapStatus> > rpc(
         stub_->AsyncDoMap(&context, request, &cq));
 		cout<<"RPC Initiated"<<endl;
-
-    std::unique_ptr<ClientAsyncResponseReader<MapStatus> > rpc(stub_->AsyncDoMap(&context, request, &cq));
-
     rpc->Finish(&reply, &status, (void*)1);
     void* got_tag;
     bool ok = false;

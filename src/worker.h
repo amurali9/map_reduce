@@ -45,7 +45,6 @@ class WorkerService final : public MasterWorker::Service {
     Status DoMap(ServerContext* context, const FileChunk* request,
                     MapStatus* reply) override {
 			busy = true;
-    Status DoMap(ServerContext* context, const FileChunk* request, MapStatus* reply) override {
 			std::cout<<"Doing map"<<std::endl;
 			std::string fileChunkName = request->name();
 			std::cout<<"Trying to open filechunk with name "<<fileChunkName<<std::endl;
