@@ -47,6 +47,8 @@ class WorkerService final : public MasterWorker::Service {
 			fileChunk = fopen(fileChunkName.c_str(), "r");
 			if(fileChunk){
 				std::cout<<"Opened filechunk"<<std::endl;
+				//1. Open file. Read line
+				//2. Pass to user's map function
 			}
 			else{
 				std::cout<<"File not found"<<std::endl;

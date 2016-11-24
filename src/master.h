@@ -34,7 +34,7 @@ class Master {
 	private:
 		/* NOW you can add below, data members and member functions as per the need of your implementation*/
 		vector<string> shard_names;
-		vector<string> worker_info;
+		map<string,bool> worker_info;	// Save the worker name and status (0: busy and 1: idle)
 };
 
 
@@ -46,11 +46,10 @@ Master::Master(const MapReduceSpec& mr_spec, const std::vector<FileShard>& file_
    for(FileShard fs : file_shards){
 	shard_names.push_back(fs.sh_name);
    }
-
-   //Get worker specs from mr_spec
-   for(string ws : mr_spec.worker_ipaddr_ports ){
-	worker_info.push_back(ws);
-   }		
+		
+   for(int j=0; j<mr_spec.worker_ipaddr_ports.size();++j){
+  	worker_info[mr_spec.worker_ipaddr_ports[j]] = 0;	// Initialize the states of all workers as idle (0:idle 1:busy)
+   }
 
 }
 
@@ -92,10 +91,20 @@ class MasterClient {
 /* CS6210_TASK: Here you go. once this function is called you will complete whole map reduce task and return true if succeeded */
 bool Master::run() {
 
-	//make rpc call to run the worker
-	MasterClient masterClient(grpc::CreateChannel("localhost:50051", grpc::InsecureChannelCredentials()));
-	cout<<"Requesting worker to domap"<<endl;
-	bool reply = masterClient.DoMap(shard_names[0]);
+	//make rpc call to run the worker. Create a grpc channel between the master and all the workers
+	vector<MasterClient> masterClient;
+	for(auto const& entry : worker_info){
+	   masterClient.emplace_back(grpc::CreateChannel(entry.first, grpc::InsecureChannelCredentials()));		// Key : entry.first  -- > Value : entry.second
+	}
+
+	//1. If DoMap stage, assign work to individual workers and set their flags appropriately
+	//2. Record when all the workers are done
+	//3. Move to Reduce stage
+	//4. Repeat steps 1-2
+	//5. Clean up (Remove temporary files)
+
+	bool reply = masterClient[0].DoMap(shard_names[0]);
+	
 	
 	return true;
 }
