@@ -5,6 +5,7 @@
 #include "mr_tasks.h"
 
 #include <grpc++/grpc++.h>
+#include <unistd.h>
 
 #include "masterworker.grpc.pb.h"
 
@@ -15,6 +16,8 @@ using grpc::Status;
 
 using masterworker::FileChunk;
 using masterworker::MapStatus;
+using masterworker::Empty;
+using masterworker::WorkerStatus;
 using masterworker::MasterWorker;
 
 /* CS6210_TASK: Handle all the task a Worker is supposed to do.
@@ -41,6 +44,7 @@ class WorkerService final : public MasterWorker::Service {
   private:
     Status DoMap(ServerContext* context, const FileChunk* request,
                     MapStatus* reply) override {
+			busy = true;
 			std::cout<<"Doing map"<<std::endl;
 			std::string fileChunkName = request->name();
 			std::cout<<"Trying to open filechunk with name "<<fileChunkName<<std::endl;
@@ -48,16 +52,29 @@ class WorkerService final : public MasterWorker::Service {
 			fileChunk = fopen(fileChunkName.c_str(), "r");
 			if(fileChunk){
 				std::cout<<"Opened filechunk"<<std::endl;
+
 			}
 			else{
 				std::cout<<"File not found"<<std::endl;
 			}
+			std::cout<<"Sleeping for 20s"<<std::endl;
+			usleep(20 *1000000);
 			fclose(fileChunk);
 			reply->set_map_status(true);
       reply->set_worker_id(id_);
+			busy = false;
       return Status::OK;
     }
+
+		Status CheckStatus(ServerContext* context, const Empty* request,
+                    WorkerStatus* reply) override {
+			reply->set_worker_status(busy);
+      return Status::OK;
+    }
+
+		//Properties
     const std::string id_;
+		bool busy;
 };
 
 

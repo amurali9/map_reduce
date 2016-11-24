@@ -16,6 +16,8 @@ using grpc::Status;
 //Masterclient
 using masterworker::FileChunk;
 using masterworker::MapStatus;
+using masterworker::Empty;
+using masterworker::WorkerStatus;
 using masterworker::MasterWorker;
 
 
@@ -34,18 +36,17 @@ class Master {
 	private:
 		/* NOW you can add below, data members and member functions as per the need of your implementation*/
 		vector<string> shard_names;
-
+		MapReduceSpec spec;
 };
 
 
 /* CS6210_TASK: This is all the information your master will get from the framework.
 	You can populate your other class data members here if you want */
 Master::Master(const MapReduceSpec& mr_spec, const std::vector<FileShard>& file_shards) {
- 
-   for(FileShard fs : file_shards){
-	shard_names.push_back(fs.sh_name);
-   }		
-
+	spec = mr_spec;
+	for(FileShard fs : file_shards){
+		shard_names.push_back(fs.sh_name);
+  }
 }
 
 class MasterClient {
@@ -64,7 +65,7 @@ class MasterClient {
 
     std::unique_ptr<ClientAsyncResponseReader<MapStatus> > rpc(
         stub_->AsyncDoMap(&context, request, &cq));
-
+		cout<<"RPC Initiated"<<endl;
     rpc->Finish(&reply, &status, (void*)1);
     void* got_tag;
     bool ok = false;
@@ -78,6 +79,33 @@ class MasterClient {
     }
 		return status.ok();
   }
+
+	bool CheckWorkerStatus() {
+    // Data we are sending to the server.
+    Empty request;
+    // request.set_name(filename);
+    WorkerStatus reply;
+    ClientContext context;
+    CompletionQueue cq;
+    Status status;
+
+    std::unique_ptr<ClientAsyncResponseReader<WorkerStatus> > rpc(
+        stub_->AsyncCheckStatus(&context, request, &cq));
+
+    rpc->Finish(&reply, &status, (void*)1);
+    void* got_tag;
+    bool ok = false;
+    GPR_ASSERT(cq.Next(&got_tag, &ok));
+    GPR_ASSERT(got_tag == (void*)1);
+    GPR_ASSERT(ok);
+    if (status.ok()) {
+      cout<<"Worker Status check RPC Done"<<endl;
+			return reply.worker_status();
+    } else {
+			cout<<"Worker Status check RPC failed"<<endl;
+			return false;
+    }
+  }
  private:
   std::unique_ptr<MasterWorker::Stub> stub_;
 };
@@ -86,9 +114,17 @@ class MasterClient {
 /* CS6210_TASK: Here you go. once this function is called you will complete whole map reduce task and return true if succeeded */
 bool Master::run() {
 	//make rpc call to run the worker
-	MasterClient masterClient(grpc::CreateChannel("localhost:50051", grpc::InsecureChannelCredentials()));
-	cout<<"Requesting worker to domap"<<endl;
-	bool reply = masterClient.DoMap(shard_names[0]);
-	cout<<reply;
+	for(string worker_ipaddr_port : spec.worker_ipaddr_ports){
+		cout<<"Port "<<worker_ipaddr_port<<endl;
+		MasterClient masterClient(grpc::CreateChannel(worker_ipaddr_port, grpc::InsecureChannelCredentials()));
+		cout<<"Requesting worker "<<worker_ipaddr_port<<" to domap"<<endl;
+		bool reply = masterClient.DoMap(shard_names[0]);
+		// if(masterClient.CheckWorkerStatus()){
+		// 	cout<<"Worker "<<worker_ipaddr_port<<" Busy"<<endl;
+		// }
+		// else{
+		// 	cout<<"Worker "<<worker_ipaddr_port<<" Available"<<endl;
+		// }
+	}
 	return true;
 }

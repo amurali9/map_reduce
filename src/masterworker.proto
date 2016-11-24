@@ -7,6 +7,7 @@ service MasterWorker {
   // Puts worker to work with either a map task or a reduce task
         rpc DoMap (FileChunk) returns (MapStatus) {}
         rpc DoReduce (FileChunk) returns (ReduceStatus) {}
+        rpc CheckStatus (Empty) returns (WorkerStatus) {}
 }
 
 // The request message containing the file_shard_name
@@ -25,4 +26,12 @@ message MapStatus {
 message ReduceStatus {
         bool reduce_status = 1;
         string worker_id = 2;
+}
+
+message Empty{
+
+}
+
+message WorkerStatus{
+  bool worker_status = 1;
 }

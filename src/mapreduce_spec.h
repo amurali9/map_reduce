@@ -13,13 +13,12 @@ struct MapReduceSpec {
      int n_workers;
      int map_kilobytes;
 
-     string output_dir;     	
-     string user_id;	     
+     string output_dir;
+     string user_id;
 
      vector<string> worker_ipaddr_ports;
-     vector<string> input_files;	 	
+     vector<string> input_files;
 };
-
 
 /* CS6210_TASK: Populate MapReduceSpec data structure with the specification from the config file */
 inline bool read_mr_spec_from_config_file(const string& config_filename, MapReduceSpec& mr_spec) {
@@ -46,20 +45,28 @@ while( getline(is_file, line) )
 	if(key.compare("output_dir") == 0) mr_spec.output_dir = value;
 	if(key.compare("user_id") == 0) mr_spec.user_id = value;
 
-	if(key.compare("worker_ipaddr_ports") == 0) mr_spec.worker_ipaddr_ports.push_back(value);
+	// if(key.compare("worker_ipaddr_ports") == 0) mr_spec.worker_ipaddr_ports.push_back(value);
+  if(key.compare("worker_ipaddr_ports") == 0){
+    stringstream ss(value);
+    string tok;
+
+    while(getline(ss, tok, ',')) {
+      mr_spec.worker_ipaddr_ports.push_back(tok);
+    }
+  }
 	if(key.compare("input_files") == 0){
 	      stringstream ss(value);
   	      string tok;
 
 	   while(getline(ss, tok, ',')) {
     		mr_spec.input_files.push_back(tok);
-  	    }		
-	}	
+  	    }
+	}
 
 
-     } 
+     }
   }
-  
+
 }
 	return true;
 }
