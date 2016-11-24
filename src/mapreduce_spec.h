@@ -54,6 +54,15 @@ while( getline(is_file, line) )
       mr_spec.worker_ipaddr_ports.push_back(tok);
     }
   }
+
+	if(key.compare("worker_ipaddr_ports") == 0) {
+	       stringstream ss1(value);
+	       string tok1;
+
+	   while(getline(ss1,tok1,',')){
+		mr_spec.worker_ipaddr_ports.push_back(tok1);
+	   }
+	}
 	if(key.compare("input_files") == 0){
 	      stringstream ss(value);
   	      string tok;
