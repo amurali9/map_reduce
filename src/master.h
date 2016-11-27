@@ -135,18 +135,11 @@ bool Master::run() {
 	}
 
 	//make rpc call to run the worker. Create a grpc channel between the master and all the workers
-	vector<MasterClient> masterClient;
-	for(auto const& entry : worker_info){
-	   masterClient.emplace_back(grpc::CreateChannel(entry.first, grpc::InsecureChannelCredentials()));		// Key : entry.first  -- > Value : entry.second
-	}
-
 	//1. If DoMap stage, assign work to individual workers and set their flags appropriately
 	//2. Record when all the workers are done
 	//3. Move to Reduce stage
 	//4. Repeat steps 1-2
 	//5. Clean up (Remove temporary files)
-
-	bool reply = masterClient[0].DoMap(shard_names[0]);
 
 
 	return true;
