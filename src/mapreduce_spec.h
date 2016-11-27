@@ -5,6 +5,8 @@
 #include <vector>
 #include <sstream>
 #include <fstream>
+#include <sys/types.h>
+#include <sys/stat.h>
 using namespace std;
 
 /* CS6210_TASK: Create your data structure here for storing spec from the config file */
@@ -19,6 +21,8 @@ struct MapReduceSpec {
      vector<string> worker_ipaddr_ports;
      vector<string> input_files;
 };
+
+// struct stat validinfo;
 
 /* CS6210_TASK: Populate MapReduceSpec data structure with the specification from the config file */
 inline bool read_mr_spec_from_config_file(const string& config_filename, MapReduceSpec& mr_spec) {
@@ -71,8 +75,31 @@ while( getline(is_file, line) )
 	return true;
 }
 
+inline bool file_exists (const std::string& name) {
+  struct stat buffer;
+  return (stat (name.c_str(), &buffer) == 0);
+}
 
 /* CS6210_TASK: validate the specification read from the config file */
 inline bool validate_mr_spec(const MapReduceSpec& mr_spec) {
+  if(mr_spec.n_output_files <= 0 || mr_spec.n_workers <=0 || mr_spec.map_kilobytes <= 0){
+    std::cout<<"Enter correct values for n_output_files, n_workers and map_kilobytes"<<std::endl;
+    return false;
+  }
+  for(string filename : mr_spec.input_files){
+    if(!file_exists(filename)){
+      cout<<"Cannot access "<<filename<<endl;
+      return false;
+    }
+  }
+  struct stat validinfo;
+  if(stat(mr_spec.output_dir.c_str(), &validinfo ) != 0 ){
+    cout<<"cannot access output_dir"<<endl;
+    return false;
+  }
+  if(!(validinfo.st_mode & S_IFDIR )){
+    cout<<"Given output_dir is not a dir"<<endl;
+    return false;
+  }
 	return true;
 }
