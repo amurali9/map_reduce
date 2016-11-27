@@ -125,18 +125,13 @@ class MasterClient {
 
 /* CS6210_TASK: Here you go. once this function is called you will complete whole map reduce task and return true if succeeded */
 bool Master::run() {
+
 	//make rpc call to run the worker
 	for(string worker_ipaddr_port : spec.worker_ipaddr_ports){
 		cout<<"Port "<<worker_ipaddr_port<<endl;
 		MasterClient masterClient(grpc::CreateChannel(worker_ipaddr_port, grpc::InsecureChannelCredentials()));
 		cout<<"Requesting worker "<<worker_ipaddr_port<<" to domap"<<endl;
 		bool reply = masterClient.DoMap(shard_names[0]);
-		// if(masterClient.CheckWorkerStatus()){
-		// 	cout<<"Worker "<<worker_ipaddr_port<<" Busy"<<endl;
-		// }
-		// else{
-		// 	cout<<"Worker "<<worker_ipaddr_port<<" Available"<<endl;
-		// }
 	}
 
 	//make rpc call to run the worker. Create a grpc channel between the master and all the workers
