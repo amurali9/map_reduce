@@ -22,8 +22,6 @@ struct MapReduceSpec {
      vector<string> input_files;
 };
 
-// struct stat validinfo;
-
 /* CS6210_TASK: Populate MapReduceSpec data structure with the specification from the config file */
 inline bool read_mr_spec_from_config_file(const string& config_filename, MapReduceSpec& mr_spec) {
 
