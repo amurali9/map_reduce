@@ -1,9 +1,14 @@
 #pragma once
 
 #include <fstream>
+#include <sstream>
 #include <mr_task_factory.h>
 #include "mr_tasks.h"
-
+#include <iostream>
+#include <string>
+#include <stdio.h>
+#include <cstdio>
+#include <vector>
 #include <grpc++/grpc++.h>
 #include <unistd.h>
 
@@ -16,9 +21,14 @@ using grpc::Status;
 
 using masterworker::FileChunk;
 using masterworker::MapStatus;
+using masterworker::ReduceStatus;
 using masterworker::Empty;
 using masterworker::WorkerStatus;
 using masterworker::MasterWorker;
+
+using namespace std;
+extern std::shared_ptr<BaseMapper> get_mapper_from_task_factory(const std::string& user_id);
+extern std::shared_ptr<BaseReducer> get_reducer_from_task_factory(const std::string& user_id);
 
 /* CS6210_TASK: Handle all the task a Worker is supposed to do.
 	This is a big task for this project, will test your understanding of map reduce */
@@ -39,44 +49,98 @@ class Worker {
 class WorkerService final : public MasterWorker::Service {
 
   public:
-    WorkerService(const std::string& server_address) : id_("Worker_" + server_address) {}
+    WorkerService(const std::string& server_address) : id_("Worker_" + server_address) {}	
 
   private:
-    Status DoMap(ServerContext* context, const FileChunk* request,
-                    MapStatus* reply) override {
+    Status DoMap(ServerContext* context, const FileChunk* request, MapStatus* reply) override {
 			busy = true;
 			std::cout<<"Doing map"<<std::endl;
 			std::string fileChunkName = request->name();
 			std::cout<<"Trying to open filechunk with name "<<fileChunkName<<std::endl;
 			FILE *fileChunk;
+			auto mapper = get_mapper_from_task_factory("cs6210");
 			fileChunk = fopen(fileChunkName.c_str(), "r");
+			char * line = NULL;
+    			size_t len = 0;
+			string str;			
+    			
 			if(fileChunk){
-				std::cout<<"Opened filechunk"<<std::endl;
-
-				//1. Open file. Read line
-				//2. Pass to user's map function
+				std::cout<<"Opened filechunk"<<std::endl;	
+				while (getline(&line, &len, fileChunk) != -1) {
+					str = string(line);
+					str.erase( std::remove(str.begin(), str.end(), '\n'), str.end() );		// Remove trailing newline
+       				 	mapper->map(str);
+   				 }				
 			}
 			else{
 				std::cout<<"File not found"<<std::endl;
 			}
-			std::cout<<"Sleeping for 20s"<<std::endl;
-			usleep(20 *1000000);
+			
 			fclose(fileChunk);
 			reply->set_map_status(true);
-      reply->set_worker_id(id_);
+      			reply->set_worker_id(id_);
 			busy = false;
       return Status::OK;
     }
 
-		Status CheckStatus(ServerContext* context, const Empty* request,
-                    WorkerStatus* reply) override {
-			reply->set_worker_status(busy);
+
+   Status DoReduce(ServerContext* context, const FileChunk* request, ReduceStatus* reply) override {
+			busy = true;
+			std::cout<<"Doing Reduce"<<std::endl;
+			std::string fileChunkName = request->name();
+			std::cout<<"Trying to open filechunk with name "<<fileChunkName<<std::endl;
+			auto reducer = get_reducer_from_task_factory("cs6210");
+			char * line = NULL;
+    			std::map<string, vector<string>> map_res;				//Final map to be passed to reducer
+			std::vector<string> tmp_res(2); 					
+
+			for(int i=0;i<1;i++){
+			    string f_name = "output/int_tmp_" + to_string(i) + ".txt"; 		// Generate filenames for workers. TODO: Pass this info from master to worker
+			    std::ifstream ifs (f_name.c_str(), std::ifstream::in);
+   			    string line;
+			    int indx;	
+		
+				if(ifs){
+			   		 while(getline(ifs,line) ){
+						stringstream ss1(line);
+	       		    			string token;
+						indx = 0;
+
+			         		while(getline(ss1,token,',')){
+							tmp_res[indx] = token;
+							indx++;
+	  			  		}
+		
+					map_res[tmp_res[0]].push_back(tmp_res[1]);			// Save result in format expected by reducer
+					tmp_res.clear();			   	
+			       		}	
+			   	 }
+			}
+
+			//IMP: Map sorts the key by default
+			typedef std::map<std::string, std::vector<string>>::iterator it_type;
+			for(it_type iterator = map_res.begin(); iterator != map_res.end(); iterator++) {
+    			   reducer->reduce(iterator->first, iterator->second);
+			}
+		
+      reply->set_reduce_status(true);
+      reply->set_worker_id(id_);
+      busy = false;
+      return Status::OK;
+    }	
+
+
+    
+
+
+    Status CheckStatus(ServerContext* context, const Empty* request, WorkerStatus* reply) override {
+      reply->set_worker_status(busy);
       return Status::OK;
     }
 
-		//Properties
+    //Properties
     const std::string id_;
-		bool busy;
+    bool busy;
 };
 
 
@@ -86,8 +150,8 @@ Worker::Worker(std::string ip_addr_port) {
 	this->ip_addr_port = ip_addr_port;
 }
 
-extern std::shared_ptr<BaseMapper> get_mapper_from_task_factory(const std::string& user_id);
-extern std::shared_ptr<BaseReducer> get_reducer_from_task_factory(const std::string& user_id);
+//extern std::shared_ptr<BaseMapper> get_mapper_from_task_factory(const std::string& user_id);
+//extern std::shared_ptr<BaseReducer> get_reducer_from_task_factory(const std::string& user_id);
 
 /* CS6210_TASK: Here you go. once this function is called your woker's job is to keep looking for new tasks
 	from Master, complete when given one and again keep looking for the next one.

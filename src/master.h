@@ -16,6 +16,7 @@ using grpc::Status;
 //Masterclient
 using masterworker::FileChunk;
 using masterworker::MapStatus;
+using masterworker::ReduceStatus;
 using masterworker::Empty;
 using masterworker::WorkerStatus;
 using masterworker::MasterWorker;
@@ -62,8 +63,7 @@ Master::Master(const MapReduceSpec& mr_spec, const std::vector<FileShard>& file_
 
 class MasterClient {
  public:
-  explicit MasterClient(std::shared_ptr<Channel> channel)
-      : stub_(MasterWorker::NewStub(channel)) {}
+  explicit MasterClient(std::shared_ptr<Channel> channel) : stub_(MasterWorker::NewStub(channel)) {}
 
   bool DoMap(string filename) {
 
@@ -75,9 +75,8 @@ class MasterClient {
     CompletionQueue cq;
     Status status;
 
-    std::unique_ptr<ClientAsyncResponseReader<MapStatus> > rpc(
-        stub_->AsyncDoMap(&context, request, &cq));
-		cout<<"RPC Initiated"<<endl;
+    std::unique_ptr<ClientAsyncResponseReader<MapStatus> > rpc(stub_->AsyncDoMap(&context, request, &cq));
+    cout<<"RPC Initiated for DoMap"<<endl;
     rpc->Finish(&reply, &status, (void*)1);
     void* got_tag;
     bool ok = false;
@@ -92,7 +91,35 @@ class MasterClient {
       return status.ok();
   }
 
-	bool CheckWorkerStatus() {
+
+  bool DoReduce(string filename) {
+
+    // Data we are sending to the server.
+    FileChunk request;
+    request.set_name(filename);
+    ReduceStatus reply;
+    ClientContext context;
+    CompletionQueue cq;
+    Status status;
+
+    std::unique_ptr<ClientAsyncResponseReader<ReduceStatus> > rpc(stub_->AsyncDoReduce(&context, request, &cq));
+    cout<<"RPC Initiated for DoReduce"<<endl;
+    rpc->Finish(&reply, &status, (void*)1);
+    void* got_tag;
+    bool ok = false;
+    GPR_ASSERT(cq.Next(&got_tag, &ok));
+    GPR_ASSERT(got_tag == (void*)1);
+    GPR_ASSERT(ok);
+    if (status.ok()) {
+      cout<<"RPC Done"<<endl;
+    } else {
+      cout<<"RPC failed"<<endl;
+    }
+      return status.ok();
+  }	
+
+    
+    bool CheckWorkerStatus() {
     // Data we are sending to the server.
     Empty request;
     // request.set_name(filename);
@@ -112,10 +139,10 @@ class MasterClient {
     GPR_ASSERT(ok);
     if (status.ok()) {
       cout<<"Worker Status check RPC Done"<<endl;
-			return reply.worker_status();
+      return reply.worker_status();
     } else {
-			cout<<"Worker Status check RPC failed"<<endl;
-			return false;
+       cout<<"Worker Status check RPC failed"<<endl;
+       return false;
     }
   }
  private:
@@ -132,6 +159,7 @@ bool Master::run() {
 		MasterClient masterClient(grpc::CreateChannel(worker_ipaddr_port, grpc::InsecureChannelCredentials()));
 		cout<<"Requesting worker "<<worker_ipaddr_port<<" to domap"<<endl;
 		bool reply = masterClient.DoMap(shard_names[0]);
+		bool reply1 = masterClient.DoReduce(shard_names[0]);
 	}
 
 	//make rpc call to run the worker. Create a grpc channel between the master and all the workers
