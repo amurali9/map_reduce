@@ -94,7 +94,7 @@ class WorkerService final : public MasterWorker::Service {
     			std::map<string, vector<string>> map_res;				//Final map to be passed to reducer
 			std::vector<string> tmp_res(2); 					
 
-			for(int i=0;i<1;i++){
+			for(int i=0;i<2;i++){
 			    string f_name = "output/int_tmp_" + to_string(i) + ".txt"; 		// Generate filenames for workers. TODO: Pass this info from master to worker
 			    std::ifstream ifs (f_name.c_str(), std::ifstream::in);
    			    string line;
