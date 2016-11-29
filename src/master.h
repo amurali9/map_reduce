@@ -46,10 +46,6 @@ class Master {
 	You can populate your other class data members here if you want */
 Master::Master(const MapReduceSpec& mr_spec, const std::vector<FileShard>& file_shards) {
 	spec = mr_spec;
-	for(FileShard fs : file_shards){
-		shard_names.push_back(fs.sh_name);
-  }
-
    // Get the fileshard names
    for(FileShard fs : file_shards){
 	shard_names.push_back(fs.sh_name);
