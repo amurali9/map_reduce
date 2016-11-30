@@ -112,9 +112,9 @@ class MasterClient {
       cout<<"RPC failed"<<endl;
     }
       return status.ok();
-  }	
+  }
 
-    
+
     bool CheckWorkerStatus() {
     // Data we are sending to the server.
     Empty request;
@@ -150,14 +150,19 @@ class MasterClient {
 bool Master::run() {
 
 	//make rpc call to run the worker
+	vector<MasterClient*> masterClients;
 	for(string worker_ipaddr_port : spec.worker_ipaddr_ports){
-		cout<<"Port "<<worker_ipaddr_port<<endl;
-		MasterClient masterClient(grpc::CreateChannel(worker_ipaddr_port, grpc::InsecureChannelCredentials()));
-		cout<<"Requesting worker "<<worker_ipaddr_port<<" to domap"<<endl;
-		bool reply = masterClient.DoMap(shard_names[0]);
-		bool reply1 = masterClient.DoReduce(shard_names[0]);
+		masterClients.push_back(new MasterClient(grpc::CreateChannel(worker_ipaddr_port, grpc::InsecureChannelCredentials())));
 	}
-
+	for(int i=0;i<shard_names.size();i++){
+		cout<<"Requesting worker "<<spec.worker_ipaddr_ports[i]<<" to domap for "<<shard_names[i]<<endl;
+		bool reply = (*masterClients[i]).DoMap(shard_names[i]);
+	}
+	cout<<"Map phase done, now doing reduce"<<endl;
+	for(int i=0;i<shard_names.size();i++){
+		cout<<"Requesting worker "<<spec.worker_ipaddr_ports[i]<<" to doreduce for "<<shard_names[i]<<endl;
+		bool reply = (*masterClients[i]).DoReduce(shard_names[i]);
+	}
 	//make rpc call to run the worker. Create a grpc channel between the master and all the workers
 	//1. If DoMap stage, assign work to individual workers and set their flags appropriately
 	//2. Record when all the workers are done
