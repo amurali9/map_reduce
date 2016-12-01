@@ -3,8 +3,8 @@
 #include "mapreduce_spec.h"
 #include "file_shard.h"
 #include <grpc++/grpc++.h>
-using namespace std;
 #include "masterworker.grpc.pb.h"
+#include <unistd.h>
 
 //grpc client
 using grpc::Channel;
@@ -37,18 +37,18 @@ class Master {
 	private:
 		/* NOW you can add below, data members and member functions as per the need of your implementation*/
 		vector<string> shard_names;
-		MapReduceSpec spec;
 		map<string,bool> worker_info;	// Save the worker name and status (0: busy and 1: idle)
+		MapReduceSpec spec;
 };
 
 
 /* CS6210_TASK: This is all the information your master will get from the framework.
 	You can populate your other class data members here if you want */
 Master::Master(const MapReduceSpec& mr_spec, const std::vector<FileShard>& file_shards) {
-	spec = mr_spec;
-   // Get the fileshard names
+   spec = mr_spec;
+  
    for(FileShard fs : file_shards){
-	shard_names.push_back(fs.sh_name);
+	shard_names.push_back(fs.sh_name);			 // Get the fileshard names
    }
 
    for(int j=0; j<mr_spec.worker_ipaddr_ports.size();++j){
@@ -72,7 +72,7 @@ class MasterClient {
     Status status;
 
     std::unique_ptr<ClientAsyncResponseReader<MapStatus> > rpc(stub_->AsyncDoMap(&context, request, &cq));
-    cout<<"RPC Initiated for DoMap"<<endl;
+    cout<<"RPC Initiated ....";
     rpc->Finish(&reply, &status, (void*)1);
     void* got_tag;
     bool ok = false;
@@ -80,9 +80,9 @@ class MasterClient {
     GPR_ASSERT(got_tag == (void*)1);
     GPR_ASSERT(ok);
     if (status.ok()) {
-      cout<<"RPC Done"<<endl;
+      cout<<"RPC Done" << endl;
     } else {
-      cout<<"RPC failed"<<endl;
+      cout<<"RPC failed" << endl;
     }
       return status.ok();
   }
@@ -99,7 +99,7 @@ class MasterClient {
     Status status;
 
     std::unique_ptr<ClientAsyncResponseReader<ReduceStatus> > rpc(stub_->AsyncDoReduce(&context, request, &cq));
-    cout<<"RPC Initiated for DoReduce"<<endl;
+    cout<<"RPC Initiated for DoReduce ....";
     rpc->Finish(&reply, &status, (void*)1);
     void* got_tag;
     bool ok = false;
@@ -107,14 +107,14 @@ class MasterClient {
     GPR_ASSERT(got_tag == (void*)1);
     GPR_ASSERT(ok);
     if (status.ok()) {
-      cout<<"RPC Done"<<endl;
+      cout<<"RPC Done" << endl;
     } else {
-      cout<<"RPC failed"<<endl;
+      cout<<"RPC failed" << endl;
     }
       return status.ok();
-  }
+  }	
 
-
+    
     bool CheckWorkerStatus() {
     // Data we are sending to the server.
     Empty request;
@@ -149,26 +149,45 @@ class MasterClient {
 /* CS6210_TASK: Here you go. once this function is called you will complete whole map reduce task and return true if succeeded */
 bool Master::run() {
 
+       int n_shards   = shard_names.size();			// No. of file shards : M (No of files >= No.of active workers)
+       int n_workers  = 1;//spec.worker_ipaddr_ports.size();	// TODO: Number of workers (active). Verify this
+								// TODO: Get the minimum of workers or files	
+
+
+       //Assign all the shards to individual mappers 	
+       cout << "Starting the Map Task : Total Shards-> " << n_shards << "   No. of active workers-> " << n_workers << endl;		  
+       for(int round = 0; round < n_shards/n_workers+1 ; round++){
+       for(int m = 0; m< n_workers ; m++){
+    	  if(round*n_workers+m < n_shards){
+		 MasterClient masterClient(grpc::CreateChannel(spec.worker_ipaddr_ports[m], grpc::InsecureChannelCredentials()));
+		 cout<<"Worker "<< spec.worker_ipaddr_ports[m] <<" : ";
+		 bool reply = masterClient.DoMap(shard_names[round*n_workers + m]);     	  	
+	     }
+	  }	
+   	}
+
+
+       usleep(2*1000000);
+
 	//make rpc call to run the worker
-	vector<MasterClient*> masterClients;
-	for(string worker_ipaddr_port : spec.worker_ipaddr_ports){
-		masterClients.push_back(new MasterClient(grpc::CreateChannel(worker_ipaddr_port, grpc::InsecureChannelCredentials())));
-	}
-	for(int i=0;i<shard_names.size();i++){
-		cout<<"Requesting worker "<<spec.worker_ipaddr_ports[i]<<" to domap for "<<shard_names[i]<<endl;
-		bool reply = (*masterClients[i]).DoMap(shard_names[i]);
-	}
-	cout<<"Map phase done, now doing reduce"<<endl;
-	for(int i=0;i<shard_names.size();i++){
-		cout<<"Requesting worker "<<spec.worker_ipaddr_ports[i]<<" to doreduce for "<<shard_names[i]<<endl;
-		bool reply = (*masterClients[i]).DoReduce(shard_names[i]);
-	}
-	//make rpc call to run the worker. Create a grpc channel between the master and all the workers
-	//1. If DoMap stage, assign work to individual workers and set their flags appropriately
-	//2. Record when all the workers are done
-	//3. Move to Reduce stage
-	//4. Repeat steps 1-2
-	//5. Clean up (Remove temporary files)
+/*	for(string worker_ipaddr_port : spec.worker_ipaddr_ports){
+		MasterClient masterClient(grpc::CreateChannel(worker_ipaddr_port, grpc::InsecureChannelCredentials()));
+		cout<<"Worker "<< worker_ipaddr_port <<" : ";
+		bool reply = masterClient.DoMap(shard_names[0]);		
+	}*/
+
+	// TODO : Make async callsAt this stage, the map task is done. Move to the Reduce stage
+	cout << "\nMap Task Done. Starting the Reduce Task : No. of intermediate files-> 8     No. of active workers-> " << n_workers  << endl;
+	/*for(string worker_ipaddr_port : spec.worker_ipaddr_ports){
+		MasterClient masterClient(grpc::CreateChannel(worker_ipaddr_port, grpc::InsecureChannelCredentials()));
+		cout<<"Worker "<< worker_ipaddr_port <<" : ";
+		bool reply = masterClient.DoReduce(shard_names[0]);		
+	}*/
+
+
+	MasterClient masterClient(grpc::CreateChannel(spec.worker_ipaddr_ports[0], grpc::InsecureChannelCredentials()));
+	cout<<"Worker "<< spec.worker_ipaddr_ports[0] <<" : ";
+	bool reply = masterClient.DoReduce("sample file");
 
 
 	return true;
