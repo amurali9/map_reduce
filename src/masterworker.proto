@@ -13,12 +13,14 @@ service MasterWorker {
 // The request message containing the file_shard_name
 message FileChunk {
         string name = 1;
+        repeated string temp_files = 2;
 }
 
 // The response message containing the status of map task
 message MapStatus {
         bool map_status = 1;
         string worker_id = 2;
+        repeated string temp_files = 3;
 }
 
 // The response message containing the status of map task
