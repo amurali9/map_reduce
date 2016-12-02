@@ -61,11 +61,13 @@ class MasterClient {
 public:
 	explicit MasterClient(std::shared_ptr<Channel> channel) : stub_(MasterWorker::NewStub(channel)) {}
 
-	MapStatus DoMap(string filename) {
+	MapStatus DoMap(string filename, int round_no, int n_int_files) {
 
 		// Data we are sending to the server.
 		FileChunk request;
 		request.set_name(filename);
+		request.set_round_no(round_no);
+		request.set_n_int_files(n_int_files);
 		MapStatus reply;
 		ClientContext context;
 		CompletionQueue cq;
@@ -155,7 +157,7 @@ public:
 		int n_shards   = shard_names.size();			// No. of file shards : M (No of files >= No.of active workers)
 		int n_workers  = 1;//spec.worker_ipaddr_ports.size();	// TODO: Number of workers (active). Verify this
 		// TODO: Get the minimum of workers or files
-
+		int n_int_files = spec.n_output_files;  		//This is r
 		vector<string> mr_temp_files;
 		//Assign all the shards to individual mappers
 		cout << "Starting the Map Task : Total Shards-> " << n_shards << "   No. of active workers-> " << n_workers << endl;
@@ -164,7 +166,7 @@ public:
 				if(round*n_workers+m < n_shards){
 					MasterClient masterClient(grpc::CreateChannel(spec.worker_ipaddr_ports[m], grpc::InsecureChannelCredentials()));
 					cout<<"Worker "<< spec.worker_ipaddr_ports[m] <<" : ";
-					MapStatus reply = masterClient.DoMap(shard_names[round*n_workers + m]);
+					MapStatus reply = masterClient.DoMap(shard_names[round*n_workers + m], round, n_int_files);
 					for(int i=0;i<reply.temp_files_size();i++){
 						mr_temp_files.push_back(reply.temp_files(i));
 					}
@@ -189,9 +191,9 @@ public:
 }*/
 
 
-MasterClient masterClient(grpc::CreateChannel(spec.worker_ipaddr_ports[0], grpc::InsecureChannelCredentials()));
-cout<<"Worker "<< spec.worker_ipaddr_ports[0] <<" : ";
-bool reply = masterClient.DoReduce("sample file", mr_temp_files);
+//MasterClient masterClient(grpc::CreateChannel(spec.worker_ipaddr_ports[0], grpc::InsecureChannelCredentials()));
+//cout<<"Worker "<< spec.worker_ipaddr_ports[0] <<" : ";
+//bool reply = masterClient.DoReduce("sample file", mr_temp_files);
 
 
 return true;

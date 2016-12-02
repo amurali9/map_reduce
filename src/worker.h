@@ -42,24 +42,36 @@ class Worker {
 		bool run();
 
 	private:
-		/* NOW you can add below, data members and member functions as per the need of your implementation*/
-		std::string ip_addr_port;
-};
 
 class WorkerService final : public MasterWorker::Service {
 
   public:
-    WorkerService(const std::string& server_address, std::shared_ptr<BaseMapper> mapper, std::shared_ptr<BaseReducer> reducer, int n_int_files, vector<string> intermediate_files) : id_("Worker_" + server_address) {
+    WorkerService(const std::string& server_address, std::shared_ptr<BaseMapper> mapper, std::shared_ptr<BaseReducer> reducer, string temp_name) : id_("Worker_" + server_address) {
 	this->mapper 		= mapper;
 	this->reducer 		= reducer;
-	this->temp_files 	= intermediate_files;
-	this->num_files 	= n_int_files;
+	this->temp_name = temp_name;
+	//this->temp_files 	= intermediate_files;
 }
 
   private:
+    //Properties
+    const std::string id_;
+    bool busy;
+    string temp_name;
+    std::shared_ptr<BaseMapper> mapper;
+    std::shared_ptr<BaseReducer> reducer;
+
     Status DoMap(ServerContext* context, const FileChunk* request, MapStatus* reply) override {
 			busy = true;
 			std::string fileChunkName = request->name();
+			cout << "No. of intermediate files to be created : " << request->n_int_files() << endl;
+
+			vector<string> intermediate_files(request->n_int_files());
+			for(int i=0;i<request->n_int_files();i++){
+				intermediate_files[i] = temp_name + to_string(request->round_no()) + ".txt";
+			}
+			mapper->impl_->intermediate_files = intermediate_files;  //This is for setting BaseMapperInternal's emit - output file names
+
 			std::cout<<"Map Task : Reading file : "<<fileChunkName<<std::endl;
 			FILE *fileChunk;
 			fileChunk = fopen(fileChunkName.c_str(), "r");
@@ -80,8 +92,8 @@ class WorkerService final : public MasterWorker::Service {
 
 			fclose(fileChunk);
 			reply->set_map_status(true);
-      reply->set_worker_id(id_);
-			for(string temp_file : temp_files){
+      			reply->set_worker_id(id_);
+			for(string temp_file : intermediate_files){
 				reply->add_temp_files(temp_file);
 			}
 			busy = false;
@@ -101,7 +113,7 @@ class WorkerService final : public MasterWorker::Service {
 			for(int i=0;i<request->temp_files_size();i++){
 				mr_temp_files.push_back(request->temp_files(i));
 			}
-			for(int i=0;i<num_files;i++){
+			for(int i=0;i<1;i++){
 			    std::ifstream ifs (mr_temp_files[i].c_str(), std::ifstream::in);
    			    string line;
 			    int indx;
@@ -133,7 +145,7 @@ class WorkerService final : public MasterWorker::Service {
 
 	// Remove all files created in the process
 	string clean_up;
-	for(int i=0;i<num_files;i++){
+	for(int i=0;i<1;i++){
 	  system(string("rm " + mr_temp_files[i]).c_str());
 	}
 
@@ -149,15 +161,15 @@ class WorkerService final : public MasterWorker::Service {
       return Status::OK;
     }
 
-    //Properties
-    const std::string id_;
-    bool busy;
-    int num_files;
-    vector<string> temp_files;
-    std::shared_ptr<BaseMapper> mapper;
-    std::shared_ptr<BaseReducer> reducer;
 
 };
+
+
+		/* NOW you can add below, data members and member functions as per the need of your implementation*/
+		std::string ip_addr_port;
+};
+
+
 
 
 /* CS6210_TASK: ip_addr_port is the only information you get when started.
@@ -180,30 +192,30 @@ bool Worker::run() {
 	worker_id.replace(9,1,"_");
 
 	// Generate map/reduce constants
-	int num_output_files 	= 1;
-	int num_int_files 	= 8;
+	//int num_output_files 	= 1;
+	//int num_int_files 	= 8;
 	string path_output 	= "output/final_" + worker_id + ".txt";
 	vector<string> intermediate_files;
 
-	string temp;
-	for(int i=0;i<num_int_files;++i){
-	  temp = "output/"+ worker_id + "_tmp_" + to_string(i) + ".txt";
-	  intermediate_files.push_back(temp);
-	}
+	string temp_name = "output/"+ worker_id + "_tmp_";
+	//for(int i=0;i<num_int_files;++i){
+	  //temp = "output/"+ worker_id + "_tmp_" + to_string(i) + ".txt";
+	  //intermediate_files.push_back(temp);
+	//}
 
 	// Pass the values to mr_tasks.h
 	// Map phase details
 	auto mapper = get_mapper_from_task_factory("cs6210");
-	(mapper->impl_)->n_int_files 	    = num_int_files; 		// No. of intermediate files to be created by worker.
-	(mapper->impl_)->intermediate_files = intermediate_files; 	// The path of filenames to be created by the individual workers
+	//(mapper->impl_)->n_int_files 	    = num_int_files; 		// No. of intermediate files to be created by worker.
+	//(mapper->impl_)->intermediate_files = intermediate_files; 	// The path of filenames to be created by the individual workers
 
 	// Reduce phase details
 	auto reducer = get_reducer_from_task_factory("cs6210");
-	(reducer->impl_)->output_file 	     = path_output;
+	//(reducer->impl_)->output_file 	     = path_output;
 
 	//Start the grpc server
 	ServerBuilder builder;
-	WorkerService service(this->ip_addr_port, mapper, reducer, num_int_files, intermediate_files);
+	WorkerService service(this->ip_addr_port, mapper, reducer, temp_name);
 	builder.AddListeningPort(this->ip_addr_port, grpc::InsecureServerCredentials());
   	builder.RegisterService(&service);
 
