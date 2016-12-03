@@ -23,19 +23,18 @@ struct BaseMapperInternal {
 		int f_indx;							// Partition function mod
 		int n_int_files;						// No. of intermediate files ( = R )
 		vector<string> intermediate_files;				// Path to intermediate files	
-		std::multimap<string,string> map_result; 			// Result of mapping task
 };
 
 
 /* CS6210_TASK Implement this function */
 inline BaseMapperInternal::BaseMapperInternal() {
-   f_indx 	= 0;						// TODO :Create new dir	    	
+   f_indx 	= 0;						// TODO :Create new dir
 }
 
 
 /* CS6210_TASK Implement this function */
 inline void BaseMapperInternal::emit(const std::string& key, const std::string& val) {
-	
+
 	/***************************************************************************************************************************/
 	// All the values are stored in map_result. When writing to file, use hash for individual elements
 	f_indx = f_indx % n_int_files;							// Partition function	

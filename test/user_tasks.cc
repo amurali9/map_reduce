@@ -18,6 +18,7 @@ class UserMapper : public BaseMapper {
 				emit(start, "1");
 			    start = strtok (NULL, delims);
 			}
+			delete[] c_input;
 		}
 };
 
