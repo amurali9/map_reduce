@@ -17,6 +17,7 @@ message FileChunk {
 	int32 n_int_files = 3;
         repeated string temp_files = 4;
 	int32 indx = 5;	
+	int32 num_shards = 6;
 }
 
 // The response message containing the status of map task

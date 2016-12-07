@@ -71,12 +71,13 @@ class MasterClient {
 public:
 	explicit MasterClient(std::shared_ptr<Channel> channel) : stub_(MasterWorker::NewStub(channel)) {}
 
-	MapStatus DoMap(string filename, int round_no, int n_int_files) {
+	MapStatus DoMap(string filename, int round_no, int n_int_files, int tot_shards) {
 
 		// Data we are sending to the server.
 		FileChunk request;
 		request.set_name(filename);
 		request.set_round_no(round_no);
+		request.set_num_shards(tot_shards);
 		request.set_n_int_files(n_int_files);
 		MapStatus reply;
 		ClientContext context;
@@ -192,7 +193,7 @@ bool Master::run() {
 			// worker_indx++;
 			continue;
 		}
-		MapStatus reply = masterClient.DoMap(shard_names[shard_indx], shard_indx, n_int_files);
+		MapStatus reply = masterClient.DoMap(shard_names[shard_indx], shard_indx, n_int_files, n_shards);
 		if(reply.map_status() == 0){
 		   cout<<"Worker "<<spec.worker_ipaddr_ports[worker_indx]<<" failed during DoMap, ignoring it and proceeding to next worker"<<endl;	
 		   worker_indx = (worker_indx + 1)%n_workers;
@@ -209,7 +210,7 @@ bool Master::run() {
 	/***********************************************************************************************************************************************************************/
 	//REDUCE PHASE
 	/***********************************************************************************************************************************************************************/
-	cout << "\nMap Task Done. Starting the Reduce Task.\nNo. of active workers->" << n_workers << "   |   No. of intermediate files (M*R)->" << mr_temp_files.size() << endl;
+	cout << "\nMap Task Done. Starting the Reduce Task.\nNo. of active workers->" << n_workers << "   |   No. of intermediate files (M*R)->" << mr_temp_files.size() << "   |   No. of output files (R)->" << n_int_files << endl;
 	// Assign M files for every reducer(one from each shard)
 	// int n_rounds = (n_shards + n_workers - 1) / n_workers; 			// No. of shards = R output files i.e. No of rounds will be same if active workers are constant
 	// M: n_shards

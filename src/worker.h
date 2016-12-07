@@ -65,18 +65,23 @@ class WorkerService final : public MasterWorker::Service {
     Status DoMap(ServerContext* context, const FileChunk* request, MapStatus* reply) override {
 			busy = true;
 			std::string fileChunkName = request->name();
+			int num_shards    = request->num_shards();
 
 			//Create the vector of intermediate file names for every shard
-			vector<string> intermediate_files(request->n_int_files());
-			for(int i=0;i<request->n_int_files();i++){
-				intermediate_files[i] = temp_name + to_string(request->round_no()) + "_" + to_string(i) + ".txt";		//Intermediate file name;
-				system(string("rm -f " + intermediate_files[i]).c_str());							// Clear the output directory to avoid overwrites
+			vector<string> intermediate_files((request->n_int_files())*num_shards);
+			int mr 		= request->n_int_files();										// No. of intermediate files
+			
+			// First mapper the intermediate files and others write to it
+			for(int i=0;i<mr*num_shards;i++){
+			    intermediate_files[i] = temp_name + to_string(i) + ".txt";						//Intermediate file name;
+			    //system(string("rm -f " + intermediate_files[i]).c_str());						// Clear the output directory to avoid overwrites
 			}
 
-			// Pass the value to BaseMapperInternal
 			mapper->impl_->intermediate_files = intermediate_files;  					//This is for setting BaseMapperInternal's emit - output file names
 			mapper->impl_->n_int_files = request->n_int_files();				
+			mapper->impl_->num_shards = num_shards;
 
+			// Pass the value to BaseMapperInternal
 			std::cout<<"Map Task : Reading file : "<<fileChunkName<<std::endl;
 			FILE *fileChunk;
 			fileChunk = fopen(fileChunkName.c_str(), "r");
@@ -101,6 +106,7 @@ class WorkerService final : public MasterWorker::Service {
 			for(string temp_file : intermediate_files){
 				reply->add_temp_files(temp_file);
 			}
+
 			busy = false;
 			system( string("rm -f " + fileChunkName).c_str());							// Clean up : Remove shards that have been processed
       			return Status::OK;
@@ -208,7 +214,7 @@ bool Worker::run() {
 	// Generate map/reduce constants
 	string path_output 	= "output/final_";
 	vector<string> intermediate_files;
-	string temp_name = "output/"+ worker_id + "_tmp_";
+	string temp_name = "output/tmp_";
 	
 	// Pass the values to mr_tasks.h
 	// Map phase details

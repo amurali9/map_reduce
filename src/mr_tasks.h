@@ -6,6 +6,7 @@
 #include <map>
 #include <fstream>
 #include <cstdlib>
+#include <functional>
 
 using namespace std;
 
@@ -22,7 +23,9 @@ struct BaseMapperInternal {
 		/* NOW you can add below, data members and member functions as per the need of your implementation*/
 		int f_indx;							// Partition function mod
 		int n_int_files;						// No. of intermediate files ( = R )
+		int num_shards;
 		vector<string> intermediate_files;				// Path to intermediate files	
+		
 };
 
 
@@ -36,13 +39,13 @@ inline BaseMapperInternal::BaseMapperInternal() {
 inline void BaseMapperInternal::emit(const std::string& key, const std::string& val) {
 
 	/***************************************************************************************************************************/
-	// All the values are stored in map_result. When writing to file, use hash for individual elements
-	f_indx = f_indx % n_int_files;							// Partition function	
+	hash<string> hasher;
+	f_indx = hasher(key) % (n_int_files*num_shards);
 	ofstream myfile (intermediate_files[f_indx].c_str(), std::ofstream::app);
         if (myfile.is_open())
         {
     	  myfile << key << "," << val << endl;
-	  f_indx++;
+	  //f_indx++;
   	}
 	myfile.close();       
 }
