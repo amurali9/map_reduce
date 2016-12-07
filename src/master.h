@@ -241,32 +241,5 @@ bool Master::run() {
 		indx_int++;
 		worker_indx = (worker_indx + 1)%n_workers;
 	}
-
-
-
-	/*while(indx_int < mr_temp_files.size()){
-		MasterClient masterClient(grpc::CreateChannel(spec.worker_ipaddr_ports[worker_indx], grpc::InsecureChannelCredentials()));
-		cout<<"Worker "<< spec.worker_ipaddr_ports[worker_indx] <<" : ";
-		if(this->PingWorker(spec.worker_ipaddr_ports[worker_indx])){
-			worker_indx = (worker_indx + 1)%n_workers;
-			cout<<"Worker "<<spec.worker_ipaddr_ports[worker_indx]<<" failed, ignoring it and proceeding to next worker"<<endl;
-			continue;
-		}
-		cout << "********************************************************************************************" << endl;
-		//Create vector of intermediate filenames to be passed to reducer
-		for(int k=0;k<n_int_files;k++){
-			 reduce_files[k] = mr_temp_files[indx_int];
-			 cout << "Worker->" << worker_indx << "  |  File : " <<  mr_temp_files[indx_int] << endl;
-			 indx_int++;
-		}
-		// MasterClient masterClient(grpc::CreateChannel(spec.worker_ipaddr_ports[worker_indx], grpc::InsecureChannelCredentials()));
-		cout << "Worker "<< spec.worker_ipaddr_ports[worker_indx] <<" : ";
-		bool reply = masterClient.DoReduce(reduce_files);
-		fill(reduce_files.begin(), reduce_files.end(), 0);
-
-		// int_file_indx++;
-		worker_indx = (worker_indx + 1)%n_workers;
-	}*/
-
 return true;
 }
