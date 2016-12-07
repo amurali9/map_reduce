@@ -69,7 +69,7 @@ class WorkerService final : public MasterWorker::Service {
 
 			//Create the vector of intermediate file names for every shard
 			vector<string> intermediate_files((request->n_int_files())*num_shards);
-			int mr 		= request->n_int_files();										// No. of intermediate files
+			int mr 		= request->n_int_files();								// No. of intermediate files
 			
 			// First mapper the intermediate files and others write to it
 			for(int i=0;i<mr*num_shards;i++){
@@ -77,7 +77,7 @@ class WorkerService final : public MasterWorker::Service {
 			    //system(string("rm -f " + intermediate_files[i]).c_str());						// Clear the output directory to avoid overwrites
 			}
 
-			mapper->impl_->intermediate_files = intermediate_files;  					//This is for setting BaseMapperInternal's emit - output file names
+			mapper->impl_->intermediate_files = intermediate_files;  						//This is for setting BaseMapperInternal's emit - output file names
 			mapper->impl_->n_int_files = request->n_int_files();				
 			mapper->impl_->num_shards = num_shards;
 
@@ -92,7 +92,7 @@ class WorkerService final : public MasterWorker::Service {
 			if(fileChunk){
 				while (getline(&line, &len, fileChunk) != -1) {
 					str = string(line);
-					str.erase( std::remove(str.begin(), str.end(), '\n'), str.end() );		// Remove trailing newline
+					str.erase( std::remove(str.begin(), str.end(), '\n'), str.end() );			// Remove trailing newline
        				 	mapper->map(str);
    				 }
 			}
