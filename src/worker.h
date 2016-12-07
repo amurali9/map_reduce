@@ -69,7 +69,7 @@ class WorkerService final : public MasterWorker::Service {
 			//Create the vector of intermediate file names for every shard
 			vector<string> intermediate_files(request->n_int_files());
 			for(int i=0;i<request->n_int_files();i++){
-				intermediate_files[i] = temp_name + to_string(request->round_no()) + "_" + to_string(i) + ".txt";	//Intermediate file name;
+				intermediate_files[i] = temp_name + to_string(request->round_no()) + "_" + to_string(i) + ".txt";		//Intermediate file name;
 				system(string("rm -f " + intermediate_files[i]).c_str());							// Clear the output directory to avoid overwrites
 			}
 
@@ -121,9 +121,11 @@ class WorkerService final : public MasterWorker::Service {
 				mr_temp_files.push_back(request->temp_files(i));
 			}
 
-			// Value passed to BaseReducerInternal		
-			reducer->impl_->output_file = path_output;
-			cout << "Writing results to file : " << path_output << endl; 		
+			// Value passed to BaseReducerInternal
+			int file_indx = request->indx();
+			std::string out_file = path_output + to_string(file_indx) + ".txt";			//Output filename		
+			reducer->impl_->output_file = out_file ;
+			cout << "Writing results to file : " << out_file << endl; 		
 
 			for(int i=0;i<mr_temp_files.size();i++){
 			    std::ifstream ifs (mr_temp_files[i].c_str(), std::ifstream::in);
@@ -204,7 +206,7 @@ bool Worker::run() {
 	worker_id.replace(9,1,"_");
 
 	// Generate map/reduce constants
-	string path_output 	= "output/final_" + worker_id + ".txt";
+	string path_output 	= "output/final_";
 	vector<string> intermediate_files;
 	string temp_name = "output/"+ worker_id + "_tmp_";
 	

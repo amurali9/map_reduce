@@ -41,7 +41,7 @@ public:
 private:
 	/* NOW you can add below, data members and member functions as per the need of your implementation*/
 	vector<string> shard_names;
-	map<string,bool> active_workers;			// Save the worker name and status (0: busy and 1: idle)
+	map<string,bool> active_workers;		// Save the worker name and status (0: busy and 1: idle)
 	MapReduceSpec spec;				// Map-Reduce specifications
 	int n_shards;					// No. of file shards created
 	int n_workers;					// No. of active workers
@@ -100,10 +100,11 @@ public:
 	}
 
 
-	bool DoReduce(vector<string> &mr_temp_files) {
+	bool DoReduce(vector<string> &mr_temp_files, int f_indx) {
 
 		// Data we are sending to the server.
 		FileChunk request;
+		request.set_indx(f_indx);
 		//request.set_name(filename);
 		for(string mr_temp_file : mr_temp_files){
 			request.add_temp_files(mr_temp_file);
@@ -209,13 +210,40 @@ bool Master::run() {
 	//REDUCE PHASE
 	/***********************************************************************************************************************************************************************/
 	cout << "\nMap Task Done. Starting the Reduce Task.\nNo. of active workers->" << n_workers << "   |   No. of intermediate files (M*R)->" << mr_temp_files.size() << endl;
-	// Assign R files for every reducer
-	// TODO: Error Handling -> Stragglers case
+	// Assign M files for every reducer(one from each shard)
 	// int n_rounds = (n_shards + n_workers - 1) / n_workers; 			// No. of shards = R output files i.e. No of rounds will be same if active workers are constant
-	vector<string> reduce_files(n_int_files);				// Vector of filenames to be passed to reducer
+	// M: n_shards
+	// R: n_int_files;
+	vector<string> reduce_files(n_shards);						// Vector of filenames to be passed to reducer
 	int indx_int = 0;
 	worker_indx = 0;
-	while(indx_int < mr_temp_files.size()){
+
+	while(indx_int < n_int_files){
+		MasterClient masterClient(grpc::CreateChannel(spec.worker_ipaddr_ports[worker_indx], grpc::InsecureChannelCredentials()));
+		cout<<"Worker "<< spec.worker_ipaddr_ports[worker_indx] <<" : ";
+		if(this->PingWorker(spec.worker_ipaddr_ports[worker_indx])){
+			worker_indx = (worker_indx + 1)%n_workers;
+			cout<<"Worker "<<spec.worker_ipaddr_ports[worker_indx]<<" failed, ignoring it and proceeding to next worker"<<endl;
+			continue;
+		}
+		cout << "********************************************************************************************" << endl;
+		//Create vector of intermediate filenames to be passed to reducer
+		for(int k=0;k<n_shards;k++){
+			 reduce_files[k] = mr_temp_files[indx_int + k*n_int_files];
+			 cout << "Worker->" << worker_indx << "  |  File : " << indx_int + k*n_int_files << endl;// <<  mr_temp_files[indx_int + m*n_int_files] << endl;
+			 //indx_int++;
+		}
+		// MasterClient masterClient(grpc::CreateChannel(spec.worker_ipaddr_ports[worker_indx], grpc::InsecureChannelCredentials()));
+		cout << "Worker "<< spec.worker_ipaddr_ports[worker_indx] <<" : ";
+		bool reply = masterClient.DoReduce(reduce_files,indx_int);
+		fill(reduce_files.begin(), reduce_files.end(), 0);
+		indx_int++;
+		worker_indx = (worker_indx + 1)%n_workers;
+	}
+
+
+
+	/*while(indx_int < mr_temp_files.size()){
 		MasterClient masterClient(grpc::CreateChannel(spec.worker_ipaddr_ports[worker_indx], grpc::InsecureChannelCredentials()));
 		cout<<"Worker "<< spec.worker_ipaddr_ports[worker_indx] <<" : ";
 		if(this->PingWorker(spec.worker_ipaddr_ports[worker_indx])){
@@ -237,7 +265,7 @@ bool Master::run() {
 
 		// int_file_indx++;
 		worker_indx = (worker_indx + 1)%n_workers;
-	}
+	}*/
 
 return true;
 }

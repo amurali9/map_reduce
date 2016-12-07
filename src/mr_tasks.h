@@ -28,7 +28,7 @@ struct BaseMapperInternal {
 
 /* CS6210_TASK Implement this function */
 inline BaseMapperInternal::BaseMapperInternal() {
-   f_indx 	= 0;						// TODO :Create new dir
+   f_indx 	= 0;								// TODO :Create new dir
 }
 
 
